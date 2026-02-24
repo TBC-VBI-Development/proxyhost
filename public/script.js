@@ -1,4 +1,4 @@
-const API = "https://YOUR_WORKER_URL";
+const API = "https://proxyhost.vcode26.workers.dev";
 
 async function signup() {
   const username = document.getElementById("signup-username").value;
