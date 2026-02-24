@@ -1,0 +1,11 @@
+{
+  "name": "vbi-pages-ui",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler pages dev ./public --compatibility-date=2025-02-20",
+    "deploy": "wrangler pages deploy ./public"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
