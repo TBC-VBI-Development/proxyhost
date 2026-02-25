@@ -1,6 +1,6 @@
 name = "vbi-host-worker"
 main = "src/index.ts"
-compatibility_date = "2025-02-20"
+compatibility_date = "2026-02-25"
 
 [vars]
 AI_MODEL = "gpt-4o-mini" # or another Workers AI text model
@@ -9,10 +9,6 @@ AI_MODEL = "gpt-4o-mini" # or another Workers AI text model
 binding = "DB"
 database_name = "vbi_host_db"
 database_id = "24944960-58d1-42c7-bed7-df8ecf6d4897"
-
-[[r2_buckets]]
-binding = "SITES_BUCKET"
-bucket_name = "vbi-sites"
 
 [ai]
 binding = "AI"
