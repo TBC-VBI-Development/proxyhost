@@ -8,7 +8,7 @@ AI_MODEL = "gpt-4o-mini" # or another Workers AI text model
 [[d1_databases]]
 binding = "DB"
 database_name = "vbi_host_db"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+database_id = "24944960-58d1-42c7-bed7-df8ecf6d4897"
 
 [[r2_buckets]]
 binding = "SITES_BUCKET"
