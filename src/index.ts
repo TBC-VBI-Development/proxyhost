@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
   SITES_BUCKET: R2Bucket;
-  AI: Ai;
+  AI: Ai; 
   AI_MODEL: string;
 }
 
