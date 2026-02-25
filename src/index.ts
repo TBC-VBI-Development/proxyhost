@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
   SITES_BUCKET: R2Bucket;
-  AI: Ai; 
+  AI: Ai;
   AI_MODEL: string;
 }
 
@@ -9,6 +9,25 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
+
+    // Serve inline UI
+    if (pathname === "/") {
+      return new Response(HOME_HTML, {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+
+    if (pathname === "/styles.css") {
+      return new Response(STYLES_CSS, {
+        headers: { "Content-Type": "text/css; charset=utf-8" }
+      });
+    }
+
+    if (pathname === "/app.js") {
+      return new Response(APP_JS, {
+        headers: { "Content-Type": "application/javascript; charset=utf-8" }
+      });
+    }
 
     // CORS preflight
     if (request.method === "OPTIONS") {
@@ -43,102 +62,149 @@ export default {
 };
 
 // ---------------------------
-// Helpers
+// Inline UI
 // ---------------------------
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization"
-  };
-}
+const HOME_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ProxyHost</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>ProxyHost</h1>
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders()
-    }
+  <div class="card">
+    <h2>Create Account</h2>
+    <input id="su-user" placeholder="Username">
+    <input id="su-pass" placeholder="Password" type="password">
+    <button onclick="signup()">Sign Up</button>
+  </div>
+
+  <div class="card">
+    <h2>Login</h2>
+    <input id="li-user" placeholder="Username">
+    <input id="li-pass" placeholder="Password" type="password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div class="card">
+    <h2>Generate Site</h2>
+    <textarea id="prompt" placeholder="Describe your site..."></textarea>
+    <button onclick="generateSite()">Generate</button>
+  </div>
+
+  <div class="card">
+    <h2>Upload HTML</h2>
+    <input id="file" type="file" accept=".html">
+    <input id="siteName" placeholder="Site name">
+    <button onclick="uploadSite()">Upload</button>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+`;
+
+const STYLES_CSS = `
+body {
+  background: #0f172a;
+  color: white;
+  font-family: system-ui, sans-serif;
+  padding: 40px;
+}
+h1 { font-size: 32px; margin-bottom: 20px; }
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+input, textarea {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+}
+button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+button:hover { background: #2563eb; }
+`;
+
+const APP_JS = `
+async function signup() {
+  const username = document.getElementById("su-user").value;
+  const password = document.getElementById("su-pass").value;
+
+  const res = await fetch("/api/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
   });
+
+  alert(await res.text());
 }
 
-async function hashPassword(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)]
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+async function login() {
+  const username = document.getElementById("li-user").value;
+  const password = document.getElementById("li-pass").value;
+
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  alert(await res.text());
 }
 
-function guessContentType(path: string): string {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".html")) return "text/html; charset=utf-8";
-  if (lower.endsWith(".css")) return "text/css; charset=utf-8";
-  if (lower.endsWith(".js")) return "application/javascript; charset=utf-8";
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".gif")) return "image/gif";
-  if (lower.endsWith(".svg")) return "image/svg+xml";
-  return "application/octet-stream";
+async function generateSite() {
+  const prompt = document.getElementById("prompt").value;
+
+  const res = await fetch("/api/generate-site", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await res.json();
+  alert("Generated HTML length: " + data.html.length);
 }
+
+async function uploadSite() {
+  const file = document.getElementById("file").files[0];
+  const siteName = document.getElementById("siteName").value;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("siteName", siteName);
+  form.append("userId", "demo-user"); // replace with real login later
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: form
+  });
+
+  alert(await res.text());
+}
+`;
 
 // ---------------------------
-// Auth
+// Helpers + API + Hosting
 // ---------------------------
+// (Your existing code stays exactly the same below this line)
 
-async function signup(request: Request, env: Env): Promise<Response> {
-  const { username, password } = await request.json();
-
-  if (!username || !password) {
-    return json({ error: "Missing username or password" }, 400);
-  }
-
-  const existing = await env.DB
-    .prepare("SELECT id FROM users WHERE username = ?")
-    .bind(username)
-    .first();
-
-  if (existing) {
-    return json({ error: "Username already taken" }, 400);
-  }
-
-  const userId = crypto.randomUUID();
-  const password_hash = await hashPassword(password);
-
-  await env.DB
-    .prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)")
-    .bind(userId, username, password_hash)
-    .run();
-
-  return json({ userId });
-}
-
-async function login(request: Request, env: Env): Promise<Response> {
-  const { username, password } = await request.json();
-
-  const row = await env.DB
-    .prepare("SELECT id, password_hash FROM users WHERE username = ?")
-    .bind(username)
-    .first<{ id: string; password_hash: string }>();
-
-  if (!row) return json({ error: "Invalid credentials" }, 401);
-
-  const ok = (await hashPassword(password)) === row.password_hash;
-  if (!ok) return json({ error: "Invalid credentials" }, 401);
-
-  return json({ userId: row.id });
-}
-
-// ---------------------------
-// AI Site Generation
-// ---------------------------
-
-async function generateSite(request: Request, env: Env): Promise<Response> {
-  const { prompt } = await request.json();
-
-  if (!prompt) return json({ error: "Missing prompt" }, 400);
+function corsMissing prompt" }, 400);
 
   const result = await env.AI.run(env.AI_MODEL, {
     messages: [
